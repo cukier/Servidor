@@ -5,16 +5,17 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 
-const int ServerSocket::chunkSize = 100;
+const int ServerSocket::chunkSize = 20;
 
 ServerSocket::ServerSocket(QList<Usuario> usuario,
                            CListModel *model,
                            QObject *parent)
     : QObject(parent)
     , m_server(new QTcpServer(this))
-    , m_soket(nullptr)
+    , m_socket(nullptr)
     , m_model(model)
     , m_usuario(usuario)
+    , currentRow(0)
 {
     connect(m_server, &QTcpServer::newConnection,
             this, &ServerSocket::acceptConnection);
@@ -22,7 +23,9 @@ ServerSocket::ServerSocket(QList<Usuario> usuario,
             this, &ServerSocket::serverError);
 
     if(!m_server->listen(QHostAddress::Any, 53593)) {
-        qDebug() << "<Server> Server could not start";
+        qDebug() << "<ServerSocket> Server could not start";
+    } else {
+        qDebug() << "<ServerSocket> Servidor criado com sucesso";
     }
 }
 
@@ -31,31 +34,36 @@ void ServerSocket::acceptConnection()
     if (!m_server)
         return;
 
-    if (m_soket) {
-        m_soket->disconnect();
-        delete m_soket;
-        m_soket = nullptr;
+    qDebug() << "<ServerSocket> nova conexao";
+
+    if (m_socket) {
+        m_socket->disconnect();
+        delete m_socket;
+        m_socket = nullptr;
+        qDebug() << "<ServerSocket> criado novo socket";
     }
 
-    m_soket = m_server->nextPendingConnection();
+    m_socket = m_server->nextPendingConnection();
 
-    if (!m_soket)
+    if (!m_socket)
         return;
 
-    connect(m_soket, &QTcpSocket::readyRead,
+    connect(m_socket, &QTcpSocket::readyRead,
             this, &ServerSocket::respond);
-    connect(m_soket, SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(soketError(QAbstractSocket::SocketError)));
+    //    connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)),
+    //            this, SLOT(socketError(QAbstractSocket::SocketError)));
+    connect(m_socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error),
+            this, &ServerSocket::socketError);
 }
 
 void ServerSocket::respond()
 {
-    if (!m_soket)
+    if (!m_socket)
         return;
 
-    QString in = QString(m_soket->readAll());
+    QString in = QString(m_socket->readAll());
 
-    qDebug() << "<Servidor> req: " << in;
+    qDebug() << "<ServerSocket> req: " << in;
 
     if (in.contains("login;")) {
         QStringList aux = in.split(';');
@@ -78,15 +86,21 @@ void ServerSocket::serverError(QAbstractSocket::SocketError serverError)
     if (serverError == QTcpSocket::RemoteHostClosedError)
         return;
 
-    qDebug() << "<Servidor> server error: " << serverError;
+    qDebug() << "<ServerSocket> server error: " << serverError;
 
     m_server->close();
 }
 
+void ServerSocket::socketError(QAbstractSocket::SocketError socketError)
+{
+    qDebug() << "<ServerSocket> server error: " << socketError;
+    m_socket->close();
+}
+
 void ServerSocket::enviarModelo()
 {
-    if (!m_soket) {
-        qDebug() << "<Servidor> nao existe socket";
+    if (!m_socket) {
+        qDebug() << "<ServerSocket> nao existe socket";
         return;
     }
 
@@ -95,13 +109,13 @@ void ServerSocket::enviarModelo()
     int fullRows = int(totalRows / chunkSize);
     int to = chunkSize;
 
-    if (currentRow >= fullRows) {
+    if (currentRow >= (fullRows * chunkSize)) {
         to = totalRows % chunkSize;
     }
 
     for (int r = currentRow; r < to; ++r) {
         for (int c = 0; c < 6; ++c) {
-            QModelIndex index = m_model->index(r, c);
+            QModelIndex index = m_model->index(r, 0);
 
             str += m_model->data(index, docentryRole + c).toString();
 
@@ -113,17 +127,17 @@ void ServerSocket::enviarModelo()
         }
     }
 
-    qDebug() << "<ServerSocket> enviado de " << currentRow << ' ' << to;
     currentRow += chunkSize;
     enviarMensagem(str);
+    qDebug() << "<ServerSocket> enviado " << currentRow << " de " << totalRows;
 }
 
 void ServerSocket::enviarMensagem(QString str)
 {
-    if (!m_soket)
+    if (!m_socket)
         return;
 
-    m_soket->write(str.toUtf8());
-    m_soket->flush();
-    m_soket->waitForBytesWritten(5000);
+    m_socket->write(str.toUtf8());
+    m_socket->flush();
+    m_socket->waitForBytesWritten(5000);
 }

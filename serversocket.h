@@ -25,10 +25,11 @@ private slots:
     void acceptConnection();
     void respond();
     void serverError(QAbstractSocket::SocketError);
+    void socketError(QAbstractSocket::SocketError);
 
 private:
     QTcpServer *m_server;
-    QTcpSocket *m_soket;
+    QTcpSocket *m_socket;
     CListModel *m_model;
     QList<Usuario> m_usuario;
     int currentRow;
