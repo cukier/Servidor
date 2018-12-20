@@ -50,8 +50,6 @@ void ServerSocket::acceptConnection()
 
     connect(m_socket, &QTcpSocket::readyRead,
             this, &ServerSocket::respond);
-    //    connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)),
-    //            this, SLOT(socketError(QAbstractSocket::SocketError)));
     connect(m_socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error),
             this, &ServerSocket::socketError);
 }
@@ -140,4 +138,5 @@ void ServerSocket::enviarMensagem(QString str)
     m_socket->write(str.toUtf8());
     m_socket->flush();
     m_socket->waitForBytesWritten(5000);
+    qDebug() << "<ServerSocket> escrito " << str.length();
 }
