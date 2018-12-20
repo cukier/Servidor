@@ -6,20 +6,12 @@
 
 class QTcpSocket;
 class QTcpServer;
-class CListModel;
 
 class ServerSocket : public QObject
 {
     Q_OBJECT
 public:
-    struct Usuario {
-        QString nome;
-        QString senha;
-    };
-
-    explicit ServerSocket(QList<Usuario> usuario,
-                          CListModel *model,
-                          QObject *parent = nullptr);
+    explicit ServerSocket(QObject *parent = nullptr);
 
 private slots:
     void acceptConnection();
@@ -30,13 +22,6 @@ private slots:
 private:
     QTcpServer *m_server;
     QTcpSocket *m_socket;
-    CListModel *m_model;
-    QList<Usuario> m_usuario;
-    int currentRow;
-
-    const static int chunkSize;
-    void enviarModelo();
-    void enviarMensagem(QString str);
 };
 
 #endif // SERVERSOCKET_H
