@@ -111,9 +111,9 @@ void ServerSocket::enviarModelo()
         to = totalRows % chunkSize;
     }
 
-    for (int r = currentRow; r < to; ++r) {
+    for (int r = 0; r < to; ++r) {
         for (int c = 0; c < 6; ++c) {
-            QModelIndex index = m_model->index(r, 0);
+            QModelIndex index = m_model->index(r + currentRow, 0);
 
             str += m_model->data(index, docentryRole + c).toString();
 
@@ -126,8 +126,14 @@ void ServerSocket::enviarModelo()
     }
 
     currentRow += chunkSize;
-    enviarMensagem(str);
     qDebug() << "<ServerSocket> enviado " << currentRow << " de " << totalRows;
+
+    if (currentRow == totalRows) {
+        str += "finito";
+        currentRow = 0;
+    }
+
+    enviarMensagem(str);
 }
 
 void ServerSocket::enviarMensagem(QString str)
