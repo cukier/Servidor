@@ -125,7 +125,7 @@ void ServerSocket::enviarModelo()
         }
     }
 
-    currentRow += chunkSize;
+    currentRow += to;
     qDebug() << "<ServerSocket> enviado " << currentRow << " de " << totalRows;
 
     if (currentRow == totalRows) {

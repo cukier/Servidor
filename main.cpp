@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
 
     CListModel model;
-    int rows = 10000;
+    int rows = 23;
 
     for (int i = 0; i < rows; ++i) {
         TableRow tabela;
